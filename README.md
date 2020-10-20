@@ -50,7 +50,7 @@ Deployment to google cloud should be as easy as: (I didn't test it since it aske
 ```
 firebase deploy
 ```
-Even more, for future CI/CD, this can integrate with firebase-ci, so we can staging and production environments.
+Even more, for future CI/CD, this can integrate with firebase-ci or even controlled by Terraform, so we can have staging and production environments.
 
 # Test
 I created another "runTest" cloud function for simulating end-user's call to the update location API endpoint in an 

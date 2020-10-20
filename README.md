@@ -52,5 +52,10 @@ firebase deploy
 ```
 Even more, for future CI/CD, this can integrate with firebase-ci, so we can staging and production environments.
 
-
+# Test
+I created another "runTest" cloud function for simulating end-user's call to the update location API endpoint in an 
+on-demand fashion. To run it from local, simply send an API call:
+```
+curl --location --request POST 'http://localhost:5001/data-pipeline-function-to-bt/us-central1/runTest'
+```
 

@@ -15,8 +15,9 @@ Finally, I decided to use Firebase to build my solution:
 
 ![Test Image 1](/demo-firebase.png)
 
-#Components
-##Location update function
+
+# Components
+## Location update function
 A cloud function with http trigger, aims to handle end-user location update requests:
 
 Example request:
@@ -29,18 +30,18 @@ Example request:
 Upon receiving a request, the function will extract the payload from request body. Then convert it to a document with 
 partition key = timestamp, and write it to Firestore DB.
 
-##Firestore DB
+## Firestore DB
 Document-based NoSQL database which are used to store each location update per user's request. User's traveling routes
 can be retrieved from here if appropriate indexes is provides.
 
-##on Location Update DB Trigger
+## on Location Update DB Trigger
 A cloud function with Firestore trigger, aims to either create or update total distances traveled per user.
 Caveat: should add timestamp check for lasted modification time to avoid currency issue.
 
-##Cloud Database
+## Cloud Database
 Key-value based database in which we store total traveled distance per user.
 
-#Deployment
+# Deployment
 Currently, everything run on emulators locally. 
 ```
 firebase emulators:start

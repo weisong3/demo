@@ -3,37 +3,37 @@ const admin = require('firebase-admin')
 const axios = require('axios')
 admin.initializeApp(functions.config().firebase)
 
-exports.onlocationUpdateHTTPRequest = functions.https.onRequest((request, response) => {
+exports.updateLocation = functions.https.onRequest((request, response) => {
   functions.logger.info('location update: ' + JSON.stringify(request.body), {structuredData: true});
   const updateRecord = {
     uid: request.body.uid,
     longitude: request.body.longitude,
     latitude: request.body.latitude
   }
-  admin.database().ref('/locationUpdate').child(request.body.timestamp).set(updateRecord)
+  admin.firestore().collection('locationUpdate').doc(request.body.timestamp.toString()).set(updateRecord)
   response.send({record: updateRecord, timestamp: request.body.timestamp});
 });
 
-exports.onLocationUpdateDBTrigger = functions.database.ref('/locationUpdate/{timestamp}')
+exports.onLocationUpdateDBTrigger = functions.firestore.document('/locationUpdate/{timestamp}')
   .onCreate((snapshot, context) => {
-    const key = snapshot.key;
-    const value = snapshot.val();
-    functions.logger.info('database event ' + key + ': ' + JSON.stringify(value))
+    functions.logger.info('database event ' + snapshot.id + ': ' + JSON.stringify(snapshot.data()))
     const newLocation = {
-      longitude: value.longitude,
-      latitude: value.latitude
+      longitude: snapshot.data().longitude,
+      latitude: snapshot.data().latitude
     }
-    const distanceCollection = admin.firestore().collection('distance')
-    return distanceCollection.doc(value.uid).get().then((userDoc) => {
-      if (!userDoc.exists) {
-        return distanceCollection.doc(value.uid).set({
+    const distanceRef = admin.database().ref('/distance')
+    return distanceRef.once('value', (records) => {
+      if (!records.hasChild(snapshot.data().uid)) {
+        return distanceRef.child(snapshot.data().uid).set({
           lastLocation: newLocation,
           totalDistance: 0
         })
       } else {
-        functions.logger.info('current userDoc: ' + JSON.stringify(userDoc.data()))
-        const oldLocation = userDoc.data().lastLocation
-        const totalDistance = userDoc.data().totalDistance
+        const record = records.child(snapshot.data().uid).val()
+        functions.logger.info('current record: ' + JSON.stringify(record))
+        const oldLocation = record.lastLocation
+        functions.logger.info('current record1: ' + JSON.stringify(oldLocation))
+        const totalDistance = record.totalDistance
         const distanceToAdd = Math.abs(
           getDistanceFromLatLonInKm(
             newLocation.latitude,
@@ -41,7 +41,7 @@ exports.onLocationUpdateDBTrigger = functions.database.ref('/locationUpdate/{tim
             oldLocation.latitude,
             oldLocation.longitude))
         functions.logger.info('distance to add = ' + distanceToAdd.toString())
-        return distanceCollection.doc(value.uid).set({
+        return distanceRef.child(snapshot.data().uid).set({
           lastLocation: newLocation,
           totalDistance: totalDistance + distanceToAdd
         })
@@ -75,7 +75,7 @@ const postRequest = (user, velocity, lat, lng) => {
   }
   functions.logger.info("posting: " + JSON.stringify(payload))
   axios
-    .post('http://localhost:5001/data-pipeline-function-to-bt/us-central1/onlocationUpdateHTTPRequest', payload)
+    .post('http://localhost:5001/data-pipeline-function-to-bt/us-central1/updateLocation', payload)
 }
 
 const getDistanceFromLatLonInKm = (lat1,lon1,lat2,lon2) => {
